@@ -9,8 +9,9 @@ const LandingPageProducts = (props) => {
     const [state, setState] = useState({
         categories: [],
         products: [],
+        ogProducts: [],
         fetchData: false,
-        query: "",
+        query: "all",
     });
 
     useEffect(() => {
@@ -18,7 +19,7 @@ const LandingPageProducts = (props) => {
             const response = await GetCategories();
             const resp = await GetProducts();
             if (response.code === 200 && resp.code === 200)
-                setState({ fetchData: true, products: resp.message, categories: response.message, query: response.message[0]?._id });
+                setState({ fetchData: true, products: resp.message, ogProducts: resp.message, categories: response.message, query: response.message[0]?._id });
         })();
     }, []);
 
@@ -29,9 +30,22 @@ const LandingPageProducts = (props) => {
                 <div className="row">
                     <div className="col-xl-12 col-lg-12 col-md-12 col-sm-12">
                         <div className="categories__tab">
-                            <Tabs categories={state.categories} query={state.query} setState={setState} />
+                            <ul className="nav nav-tabs  justify-content-center mb-55">
+                                <li className={"nav-item "}>
+                                    <button
+                                        className={"all" === state.query ? "nav-link active" : "nav-link"}
+                                        onClick={() => {
+                                            setState((state) => ({ ...state, query: "all", products: state.ogProducts }));
+                                        }}
+                                    >
+                                        All
+                                    </button>
+                                </li>
+                                <Tabs categories={state.categories} products={state.ogProducts} query={state.query} setState={setState} />
+                            </ul>
+
                             <div className="tab-content">
-                                <TabBody products={state.products} />
+                                <TabBody products={state.products} query={state.query} />
                             </div>
                         </div>
                     </div>
@@ -52,23 +66,24 @@ const Heading = (props) => {
     );
 };
 
-const Tabs = ({ categories, query, setState }) => {
-    return (
-        <ul className="nav nav-tabs  justify-content-center mb-55">
-            {categories.map((cat, idx) => (
-                <li key={idx} className={"nav-item "}>
-                    <button
-                        className={cat._id === query ? "nav-link active" : "nav-link"}
-                        onClick={() => {
-                            setState((state) => ({ ...state, query: cat._id }));
-                        }}
-                    >
-                        {cat.name}
-                    </button>
-                </li>
-            ))}
-        </ul>
-    );
+const contains = (categories, query) => {
+    return categories.filter((el) => el._id === query).length > 0 ? true : false;
+};
+
+const Tabs = ({ categories, query, setState, products }) => {
+    return categories.map((cat, idx) => (
+        <li key={idx} className={"nav-item "}>
+            <button
+                className={cat._id === query ? "nav-link active" : "nav-link"}
+                onClick={() => {
+                    const filtered = products.filter((el) => contains(el.category, cat._id));
+                    setState((state) => ({ ...state, query: cat._id, products: filtered }));
+                }}
+            >
+                {cat.name}
+            </button>
+        </li>
+    ));
 };
 
 const TabBody = ({ products }) => {
@@ -126,7 +141,7 @@ const TabBody = ({ products }) => {
                                                 <span>₹</span> {prdct.price}
                                             </p>
                                             <Link className="p-absoulute pr-2" to={`product/${prdct._id}`}>
-                                                Add to cart
+                                                Detail
                                             </Link>
                                         </div>
                                     </div>
